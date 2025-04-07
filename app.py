@@ -1,81 +1,53 @@
-import flask
-import pickle
-from io import BytesIO
-from torch import argmax, load
-from torch import device as DEVICE
-from torch.cuda import is_available
-from torch.nn import Sequential, Linear, SELU, Dropout, LogSigmoid
+from flask import Flask, render_template, request
+import torch
+from torchvision import transforms, models
 from PIL import Image
-from torchvision.transforms import Compose, ToTensor, Resize
-from torchvision.models import resnet50
 import os
-UPLOAD_FOLDER = os.path.join('static', 'photos')
-app = flask.Flask(__name__, template_folder='templates')
-app.secret_key = "secret key"
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
+app = Flask(__name__)
 
-def allowed_file(filename):
-	return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+# Load the trained model
+model = models.resnet50()
+model.fc = torch.nn.Linear(model.fc.in_features, 4)
+model.load_state_dict(torch.load("models/model.pth", map_location=torch.device('cpu')))
+model.eval()
 
-LABELS = ['None', 'Meningioma', 'Glioma', 'Pitutary']
+# Define image transform
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+])
 
-device = "cuda" if is_available() else "cpu"
+# Define class names
+classes = ['glioma', 'meningioma', 'notumor', 'pituitary']
 
-resnet_model = resnet50(pretrained=True)
 
-for param in resnet_model.parameters():
-    param.requires_grad = True
+@app.route('/')
+def index():
+    return render_template('MainPage.html')
 
-n_inputs = resnet_model.fc.in_features
-resnet_model.fc = Sequential(Linear(n_inputs, 2048),
-                            SELU(),
-                            Dropout(p=0.4),
-                            Linear(2048, 2048),
-                            SELU(),
-                            Dropout(p=0.4),
-                            Linear(2048, 4),
-                            LogSigmoid())
+@app.route('/predict', methods=['POST'])
+def predict():
+    if 'image' not in request.files:
+        return "No file uploaded", 400
 
-for name, child in resnet_model.named_children():
-    for name2, params in child.named_parameters():
-        params.requires_grad = True
+    file = request.files['image']
+    if file.filename == '':
+        return "No selected file", 400
 
-resnet_model.to(device)
-resnet_model.load_state_dict(load('./models/bt_resnet50_model.pt', map_location=DEVICE(device)))
-resnet_model.eval()
+    # Read image
+    img = Image.open(file.stream).convert("RGB")
+    img_tensor = transform(img).unsqueeze(0)  # Add batch dimension
 
-def preprocess_image(image_bytes):
-  transform = Compose([Resize((512, 512)), ToTensor()])
-  img = Image.open(BytesIO(image_bytes))
-  return transform(img).unsqueeze(0)
+    # Prediction
+    with torch.no_grad():
+        output = model(img_tensor)
+        _, predicted = torch.max(output, 1)
+        label = classes[predicted.item()]
 
-def get_prediction(image_bytes):
-  tensor = preprocess_image(image_bytes=image_bytes)
-  y_hat = resnet_model(tensor.to(device))
-  class_id = argmax(y_hat.data, dim=1)
-  return str(int(class_id)), LABELS[int(class_id)]
+    return render_template('pred.html', prediction=label)
 
-@app.route('/', methods=['GET'])
-def main():
-    if flask.request.method == 'GET':
-        return(flask.render_template('DiseaseDet.html'))     
-
-@app.route("/uimg",methods=['GET','POST'])
-def uimg():
-    if flask.request.method == 'GET':
-        return(flask.render_template('uimg.html'))     
-    if flask.request.method == 'POST':
-        file = flask.request.files['file']
-        img_bytes = file.read()   
-        class_id, class_name = get_prediction(img_bytes)
-        return(flask.render_template('pred.html',result = class_name,file = file))   
-      
-@app.errorhandler(500)
-def server_error(error):
-    return render_template('error.html'), 500
 
 if __name__ == '__main__':
-   	app.run(debug=True)
+   app.run(debug=True, port=8000)
+
