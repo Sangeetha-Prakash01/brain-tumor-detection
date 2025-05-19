@@ -2,53 +2,66 @@
 
 ## Introduction
 
-This project is a **Flask web application** for detecting brain tumors from MRI images using a deep learning model built with **PyTorch**. Users can upload MRI images through the app, and the model will classify them as either tumor or non-tumor. The goal of this project is to provide an intuitive interface for medical professionals to quickly identify potential brain tumors.
-
+This project is a Flask web application for detecting brain tumors from MRI images using a deep learning model. Users can upload MRI scans through the app, and the model predicts whether the image indicates the presence of a tumor or not. The goal is to provide a simple and effective tool to help medical professionals quickly identify potential brain tumors.
 ### Dataset:
 - The dataset contains MRI images, divided into two categories: **tumor** and **non-tumor**.
 - Preprocessing techniques are applied to the dataset to ensure optimal model performance.
 
 ## Project Overview
 
-This end-to-end project consists of:
-1. **Data Loading**: Load MRI images for training, validation, and testing.
-2. **Data Preprocessing**: Apply normalization, resizing, and augmentation techniques.
-3. **Model Building**: Build a Convolutional Neural Network (CNN) using **PyTorch** to classify the MRI images.
-4. **Model Training**: Train the model on GPU (if available) to detect brain tumors.
-5. **Flask Web Application**: Develop a Flask app for user interaction, allowing image uploads for tumor detection.
-6. **Model Deployment**: Deploy the trained model within the Flask app.
-7. **Prediction**: Provide real-time predictions through the Flask web app.
+* Collected and organized a brain MRI dataset into training and testing folders with two classes: **tumor** and **no tumor**.
+* Preprocessed images by resizing them to 224x224 and converting to tensors for model input.
+* Built a deep learning model using transfer learning with a pretrained ResNet-50, modifying the final layer for binary classification.
+* Trained the model on the MRI dataset to accurately classify images as tumor or no tumor.
+* Developed a Flask web application to provide a user-friendly interface for uploading MRI images.
+* Integrated the trained model into the Flask app to make real-time predictions on uploaded images.
+* Created HTML templates for different pages (upload, prediction result, error handling) with Bootstrap styling.
+* Prepared scripts and environment files (like `train_model.py`, `app.py`, and `requirements.txt`) for easy reproducibility.
+
+---
 
 ## Model Download and Directory Structure
 
 ### Pretrained Model:
-You can download the pretrained model from the following link:
-[Brain Tumor Detection Model](https://drive.google.com/file/d/1LJG_ITCWWtriLC5NPrWxIDwekWbhU_Rj/view?usp=sharing)
+### Dataset Source
+This project uses MRI brain scan images from this public dataset:  
+[Brain Tumor Detection Dataset on Kaggle](https://www.kaggle.com/navoneel/brain-mri-images-for-brain-tumor-detection)
+
 
 ### Directory Structure:
 ```
-Brain-Tumor-Detection/
-│
-├── app/
-│   ├── static/                 # CSS, JS, and images for the Flask web app
-│   ├── templates/              # HTML templates for the Flask app
-│   └── app.py                  # Main Flask application
-│
-├── model/
-│   └── brain_tumor_model.pth   # Pretrained PyTorch model
-│
-├── data/
-│   ├── train/                  # Training MRI images
-│   ├── test/                   # Testing MRI images
-│
-├── src/
-│   ├── dataset.py              # Script to load and preprocess the dataset
-│   ├── model.py                # CNN model architecture using PyTorch
-│   └── train.py                # Script to train the model
-│
-├── README.md                   # Project documentation
-└── requirements.txt            # List of required Python packages
-```
+### Directory Structure:
+
+brain-tumor-detection/
+├── dataset/
+│   ├── Training/
+│   │   ├── glioma/
+│   │   ├── meningioma/
+│   │   ├── no_tumor/
+│   │   └── pituitary/
+│   ├── Testing/
+│   │   ├── glioma/
+│   │   ├── meningioma/
+│   │   ├── no_tumor/
+│   │   └── pituitary/
+├── models/
+│   └── bt_resnet50_model.py      # Model architecture definition
+│   └── model.pth                 # Trained model weights
+├── templates/
+│   ├── Diseasedet.html           # Info page about brain tumors
+│   ├── error.html                # Error page
+│   ├── MainPage.html             # Main upload page
+│   ├── pred.html                 # Prediction result page
+│   └── uimg.html                 # Upload image page
+├── static/
+│   └── b.jpg                     # Static image used in templates
+├── app.py                       # Flask application script
+├── train_model.py               # Training script for the model
+├── requirements.txt             # Project dependencies
+├── README.md                    # Project documentation
+└── .gitignore                   # Git ignore file (optional)
+
+
 
 ## Setup Instructions
 
@@ -76,7 +89,7 @@ pip install -r requirements.txt
 
 ### Step 3: Download the Pretrained Model
 
-Download the pretrained model from [this link](https://drive.google.com/file/d/1LJG_ITCWWtriLC5NPrWxIDwekWbhU_Rj/view?usp=sharing) and place it in the `model/` directory as `brain_tumor_model.pth`.
+Download the pretrained model from [Brain Tumor Detection Dataset on Kaggle](https://www.kaggle.com/navoneel/brain-mri-images-for-brain-tumor-detection) and place it in the `model/` directory as `brain_tumor_model.pth`.
 
 ### Step 4: Running the Flask App
 
@@ -97,7 +110,7 @@ The app will be hosted at `http://127.0.0.1:5000/`. You can open the URL in your
 
 ## Model Architecture
 
-The model used in this project is a **Convolutional Neural Network (CNN)** built using **PyTorch**. The architecture has been optimized for image classification tasks and consists of several layers:
+The model usedThe model used in this project is a Convolutional Neural Network (CNN) based on the pretrained ResNet-50 architecture. Instead of building a CNN from scratch, transfer learning was applied by modifying the final fully connected layer to perform binary classification (tumor / no tumor) on brain MRI images.
 
 ### Key Layers:
 - **Convolutional Layers**: For feature extraction from MRI images.
